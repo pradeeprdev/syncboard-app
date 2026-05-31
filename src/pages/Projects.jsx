@@ -1,76 +1,180 @@
 import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchProjects, createProject } from "../store/projectSlice";
-import { useProjectRole } from "../hooks/useProjectRole";
 import { Link } from "react-router-dom";
+import { Plus, FolderKanban, Users, Archive } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { createProject, fetchProjects } from "../store/projectSlice";
+
+const getId = (value) => {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  return value._id || value.id;
+};
 
 export default function Projects() {
   const dispatch = useDispatch();
-  const { list, loading } = useSelector((state) => state.projects);
+  const { list, loading, error } = useSelector((state) => state.projects);
   const { user } = useSelector((state) => state.auth);
-  const [name, setName] = useState("");
+
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+  });
 
   useEffect(() => {
     dispatch(fetchProjects());
   }, [dispatch]);
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!name) return;
-    await dispatch(createProject({ name }));
-    setName("");
-  };
-
   const getUserRoleInProject = (project) => {
-    if (String(project.createdBy) === String(user?.id)) return 'admin';
-    const member = project.members?.find(m => String(m.user) === String(user?.id));
+    const userId = getId(user);
+    const createdBy = getId(project.createdBy);
+
+    if (String(createdBy) === String(userId)) return "admin";
+
+    const member = project.members?.find(
+      (m) => String(getId(m.user)) === String(userId)
+    );
+
     return member?.role || null;
   };
 
+  const handleCreate = async (e) => {
+    e.preventDefault();
+
+    if (!form.name.trim()) return;
+
+    await dispatch(createProject(form)).unwrap();
+
+    setForm({
+      name: "",
+      description: "",
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-slate-100 p-6">
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow p-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Projects</h1>
-        </div>
+    <main className="min-h-screen bg-slate-100 px-4 py-6">
+      <section className="mx-auto max-w-6xl">
+        <div className="rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-950">
+                Projects
+              </h1>
+              <p className="mt-1 text-sm text-slate-500">
+                Create projects, invite members, and manage work by roles.
+              </p>
+            </div>
 
-        <form onSubmit={handleCreate} className="mt-6 flex gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="New project name" className="flex-1 border rounded-lg px-4 py-2" />
-          <button className="bg-black text-white px-4 py-2 rounded-lg">Create</button>
-        </form>
+            <div className="rounded-2xl bg-slate-950 px-4 py-3 text-white">
+              <p className="text-xs text-slate-300">Total Projects</p>
+              <p className="text-2xl font-bold">{list.length}</p>
+            </div>
+          </div>
 
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {loading && (
-            <div className="col-span-1 md:col-span-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="animate-pulse bg-white rounded-lg p-4 border">
-                  <div className="h-6 bg-slate-200 rounded w-1/2 mb-3"></div>
-                  <div className="h-3 bg-slate-200 rounded w-3/4"></div>
-                </div>
-                <div className="animate-pulse bg-white rounded-lg p-4 border">
-                  <div className="h-6 bg-slate-200 rounded w-1/2 mb-3"></div>
-                  <div className="h-3 bg-slate-200 rounded w-3/4"></div>
-                </div>
-              </div>
+          <form
+            onSubmit={handleCreate}
+            className="mt-6 grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_1fr_auto]"
+          >
+            <input
+              value={form.name}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, name: e.target.value }))
+              }
+              placeholder="Project name"
+              className="rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-slate-900"
+            />
+
+            <input
+              value={form.description}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
+              placeholder="Short description"
+              className="rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-slate-900"
+            />
+
+            <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 font-medium text-white hover:bg-slate-800">
+              <Plus size={18} />
+              Create
+            </button>
+          </form>
+
+          {error && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
             </div>
           )}
 
-          {!loading && list.map((p) => {
-            const role = getUserRoleInProject(p);
-            const roleColors = { admin: 'bg-purple-100 text-purple-800', member: 'bg-blue-100 text-blue-800', viewer: 'bg-slate-100 text-slate-800' };
-            return (
-              <Link key={p._id} to={`/projects/${p._id}`} className="block p-4 border rounded-lg hover:shadow transition-shadow duration-150">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-lg">{p.name}</h3>
-                  {role && <span className={`text-xs px-2 py-1 rounded ${roleColors[role] || ''}`}>{role}</span>}
-                </div>
-                <p className="text-sm text-slate-500 line-clamp-2">{p.description}</p>
-                <div className="mt-2 text-xs text-slate-400">{p.members?.length || 0} members</div>
-              </Link>
-            );
-          })}
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            {loading &&
+              [1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="h-36 animate-pulse rounded-2xl border bg-slate-50"
+                />
+              ))}
+
+            {!loading &&
+              list.map((project) => {
+                const role = getUserRoleInProject(project);
+
+                return (
+                  <Link
+                    key={project._id}
+                    to={`/projects/${project._id}`}
+                    className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-900">
+                          <FolderKanban size={22} />
+                        </div>
+
+                        <div>
+                          <h3 className="font-semibold text-slate-950 group-hover:underline">
+                            {project.name}
+                          </h3>
+                          <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                            {project.description || "No description"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium capitalize text-slate-700">
+                        {role}
+                      </span>
+                    </div>
+
+                    <div className="mt-5 flex items-center justify-between text-sm text-slate-500">
+                      <span className="inline-flex items-center gap-1">
+                        <Users size={15} />
+                        {project.members?.length || 0} members
+                      </span>
+
+                      <span className="inline-flex items-center gap-1 capitalize">
+                        <Archive size={15} />
+                        {project.status}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+
+            {!loading && list.length === 0 && (
+              <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+                <p className="font-semibold text-slate-900">
+                  No projects yet
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Create your first project to start.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

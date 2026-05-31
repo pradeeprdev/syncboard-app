@@ -1,15 +1,26 @@
-import { useSelector } from 'react-redux';
+import { useSelector } from "react-redux";
+
+const getId = (value) => {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  return value._id || value.id;
+};
 
 export const useProjectRole = (project) => {
-  const { user } = useSelector((s) => s.auth);
+  const { user } = useSelector((state) => state.auth);
+
   if (!user || !project) return null;
 
-  // normalize user id (backend may return `_id` or `id`)
-  const uid = user._id || user.id || user._id?.toString?.();
+  const userId = getId(user);
+  const createdBy = getId(project.createdBy);
 
-  const isCreator = String(project.createdBy) === String(uid);
-  const member = project.members?.find(m => String(m.user) === String(uid));
+  if (String(createdBy) === String(userId)) {
+    return "admin";
+  }
 
-  if (isCreator) return 'admin';
+  const member = project.members?.find(
+    (m) => String(getId(m.user)) === String(userId)
+  );
+
   return member?.role || null;
 };

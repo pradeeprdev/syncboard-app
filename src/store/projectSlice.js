@@ -1,60 +1,199 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "../lib/api";
 
-export const fetchProjects = createAsyncThunk("projects/fetch", async (_, { rejectWithValue }) => {
-  try {
-    const res = await api.get("/projects");
-    return res.data.data.projects;
-  } catch (err) {
-    return rejectWithValue(err.response?.data?.message || "Failed to fetch projects");
+export const fetchProjects = createAsyncThunk(
+  "projects/fetchProjects",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/projects");
+      return res.data.data.projects;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch projects"
+      );
+    }
   }
-});
+);
 
-export const createProject = createAsyncThunk("projects/create", async (payload, { rejectWithValue }) => {
-  try {
-    const res = await api.post("/projects", payload);
-    return res.data.data.project;
-  } catch (err) {
-    return rejectWithValue(err.response?.data?.message || "Create project failed");
+export const fetchProjectById = createAsyncThunk(
+  "projects/fetchProjectById",
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/projects/${projectId}`);
+      return res.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch project"
+      );
+    }
   }
-});
+);
 
-export const fetchProjectById = createAsyncThunk("projects/fetchById", async (id, { rejectWithValue }) => {
-  try {
-    const res = await api.get(`/projects/${id}`);
-    return res.data.data.project;
-  } catch (err) {
-    return rejectWithValue(err.response?.data?.message || "Failed to fetch project");
+export const createProject = createAsyncThunk(
+  "projects/createProject",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const res = await api.post("/projects", payload);
+      return res.data.data.project;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create project"
+      );
+    }
   }
-});
+);
 
-const slice = createSlice({
+export const updateProject = createAsyncThunk(
+  "projects/updateProject",
+  async ({ projectId, payload }, { rejectWithValue }) => {
+    try {
+      const res = await api.patch(`/projects/${projectId}`, payload);
+      return res.data.data.project;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update project"
+      );
+    }
+  }
+);
+
+export const archiveProject = createAsyncThunk(
+  "projects/archiveProject",
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const res = await api.delete(`/projects/${projectId}`);
+      return res.data.data.project;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to archive project"
+      );
+    }
+  }
+);
+
+export const inviteMember = createAsyncThunk(
+  "projects/inviteMember",
+  async ({ projectId, email, role }, { rejectWithValue }) => {
+    try {
+      const res = await api.post(`/projects/${projectId}/invitations`, {
+        email,
+        role,
+      });
+      return res.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to invite member"
+      );
+    }
+  }
+);
+
+export const acceptInvitation = createAsyncThunk(
+  "projects/acceptInvitation",
+  async (token, { rejectWithValue }) => {
+    try {
+      const res = await api.post(`/projects/invitations/${token}/accept`);
+      return res.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to accept invitation"
+      );
+    }
+  }
+);
+
+export const fetchActivity = createAsyncThunk(
+  "projects/fetchActivity",
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/projects/${projectId}/activity`);
+      return res.data.data.activity;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch activity"
+      );
+    }
+  }
+);
+
+const projectSlice = createSlice({
   name: "projects",
-  initialState: { list: [], current: null, loading: false, error: null },
-  reducers: {},
+  initialState: {
+    list: [],
+    current: null,
+    currentRole: null,
+    activity: [],
+    loading: false,
+    error: null,
+    inviteResult: null,
+  },
+  reducers: {
+    clearProjectError: (state) => {
+      state.error = null;
+    },
+    clearInviteResult: (state) => {
+      state.inviteResult = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchProjects.pending, (s) => {
-        s.loading = true;
-        s.error = null;
+      .addCase(fetchProjects.pending, (state) => {
+        state.loading = true;
       })
-      .addCase(fetchProjects.fulfilled, (s, a) => {
-        s.loading = false;
-        s.list = a.payload;
+      .addCase(fetchProjects.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list = action.payload;
       })
-      .addCase(fetchProjects.rejected, (s, a) => {
-        s.loading = false;
-        s.error = a.payload;
-      })
-
-      .addCase(createProject.fulfilled, (s, a) => {
-        s.list.unshift(a.payload);
+      .addCase(fetchProjects.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
 
-      .addCase(fetchProjectById.fulfilled, (s, a) => {
-        s.current = a.payload;
+      .addCase(fetchProjectById.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchProjectById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.current = action.payload.project;
+        state.currentRole = action.payload.role;
+      })
+      .addCase(fetchProjectById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      .addCase(createProject.fulfilled, (state, action) => {
+        state.list.unshift(action.payload);
+      })
+
+      .addCase(updateProject.fulfilled, (state, action) => {
+        state.current = action.payload;
+        state.list = state.list.map((p) =>
+          p._id === action.payload._id ? action.payload : p
+        );
+      })
+
+      .addCase(archiveProject.fulfilled, (state, action) => {
+        state.current = action.payload;
+        state.list = state.list.map((p) =>
+          p._id === action.payload._id ? action.payload : p
+        );
+      })
+
+      .addCase(inviteMember.fulfilled, (state, action) => {
+        state.inviteResult = action.payload;
+      })
+      .addCase(inviteMember.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      .addCase(fetchActivity.fulfilled, (state, action) => {
+        state.activity = action.payload;
       });
-  }
+  },
 });
 
-export default slice.reducer;
+export const { clearProjectError, clearInviteResult } =
+  projectSlice.actions;
+
+export default projectSlice.reducer;

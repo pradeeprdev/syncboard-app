@@ -9,7 +9,11 @@ export default function Register() {
 
   const { loading, error } = useSelector((state) => state.auth);
 
-  const { register, handleSubmit } = useForm();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
 
   const onSubmit = async (data) => {
     const res = await dispatch(registerUser(data));
@@ -33,29 +37,57 @@ export default function Register() {
           </p>
         )}
 
-        <input
-          {...register("name")}
-          placeholder="Full Name"
-          className="w-full border rounded-lg px-4 py-3 mb-4"
-        />
+        <div className="mb-4">
+          <input
+            {...register("name", { required: "Full name is required" })}
+            placeholder="Full Name"
+            className="w-full border rounded-lg px-4 py-3"
+            aria-invalid={errors.name ? "true" : "false"}
+          />
+          {errors.name && (
+            <p className="text-sm text-red-600 mt-2">{errors.name.message}</p>
+          )}
+        </div>
 
-        <input
-          {...register("email")}
-          type="email"
-          placeholder="Email"
-          className="w-full border rounded-lg px-4 py-3 mb-4"
-        />
+        <div className="mb-4">
+          <input
+            {...register("email", {
+              required: "Email is required",
+              pattern: {
+                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                message: "Enter a valid email address",
+              },
+            })}
+            type="email"
+            placeholder="Email"
+            className="w-full border rounded-lg px-4 py-3"
+            aria-invalid={errors.email ? "true" : "false"}
+          />
+          {errors.email && (
+            <p className="text-sm text-red-600 mt-2">{errors.email.message}</p>
+          )}
+        </div>
 
-        <input
-          {...register("password")}
-          type="password"
-          placeholder="Password"
-          className="w-full border rounded-lg px-4 py-3 mb-4"
-        />
+        <div className="mb-4">
+          <input
+            {...register("password", {
+              required: "Password is required",
+              minLength: { value: 6, message: "Password must be at least 6 characters" },
+            })}
+            type="password"
+            placeholder="Password"
+            className="w-full border rounded-lg px-4 py-3"
+            aria-invalid={errors.password ? "true" : "false"}
+          />
+          {errors.password && (
+            <p className="text-sm text-red-600 mt-2">{errors.password.message}</p>
+          )}
+        </div>
 
         <button
+          type="submit"
           disabled={loading}
-          className="w-full bg-black text-white py-3 rounded-lg"
+          className="w-full bg-black text-white py-3 rounded-lg disabled:opacity-60"
         >
           {loading ? "Creating..." : "Register"}
         </button>

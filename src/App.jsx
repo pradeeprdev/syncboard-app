@@ -1,56 +1,44 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
+import AcceptInvite from "./pages/AcceptInvite";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import ProtectedRoute from "./routes/ProtectedRoute";
-import Layout from "./components/Layout";
-import SocketManager from "./components/SocketManager";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <SocketManager />
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" />} />
+    <Routes>
+      <Route path="/" element={<Navigate to="/projects" />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
-        <Route path="/login" element={<Login />} />
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <Projects />
+          </ProtectedRoute>
+        }
+      />
 
-        <Route path="/register" element={<Register />} />
+      <Route
+        path="/projects/:projectId"
+        element={
+          <ProtectedRoute>
+            <ProjectDetail />
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Dashboard />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/projects"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Projects />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/projects/:projectId"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ProjectDetail />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+      <Route
+        path="/accept-invite/:token"
+        element={
+          <ProtectedRoute>
+            <AcceptInvite />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }
