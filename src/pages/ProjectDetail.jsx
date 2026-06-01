@@ -8,7 +8,9 @@ import {
   fetchActivity,
   inviteMember,
   clearInviteResult,
+  fetchInvitations,
 } from "../store/projectSlice";
+import { showToast } from "../store/uiSlice";
 
 import {
   fetchTasks,
@@ -40,6 +42,7 @@ export default function ProjectDetail() {
     currentRole,
     activity,
     inviteResult,
+    invitations,
   } = useSelector((state) => state.projects);
 
   const {
@@ -87,6 +90,11 @@ export default function ProjectDetail() {
     dispatch(fetchProjectById(projectId));
     dispatch(fetchActivity(projectId));
   }, [dispatch, projectId]);
+
+  // fetch pending invites when role is known and user can invite
+  useEffect(() => {
+    if (canInvite) dispatch(fetchInvitations(projectId));
+  }, [canInvite, dispatch, projectId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -179,13 +187,30 @@ export default function ProjectDetail() {
 
     if (!inviteForm.email.trim()) return;
 
-    await dispatch(
-      inviteMember({
-        projectId,
-        email: inviteForm.email,
-        role: inviteForm.role,
-      })
-    ).unwrap();
+    try {
+      const res = await dispatch(
+        inviteMember({
+          projectId,
+          email: inviteForm.email,
+          role: inviteForm.role,
+        })
+      ).unwrap();
+
+      // show toast
+      dispatch(
+        showToast({ type: "success", message: res.message || res.inviteLink || "Invitation sent" })
+      );
+
+      // if recipient not registered, keep inviteResult visible (it will show inviteLink)
+      if (!res.targetExists) {
+        // no-op, inviteResult is already in state
+      } else {
+        // refresh invitations list
+        dispatch(fetchInvitations(projectId));
+      }
+    } catch (err) {
+      dispatch(showToast({ type: "error", message: err || "Failed to send invite" }));
+    }
 
     setInviteForm({
       email: "",
@@ -316,6 +341,30 @@ export default function ProjectDetail() {
                 >
                   Copy Link
                 </button>
+              </div>
+            )}
+
+            {invitations && invitations.length > 0 && (
+              <div className="mt-4 rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
+                <p className="text-sm font-semibold text-yellow-800">Pending Invitations</p>
+                <div className="mt-3 space-y-2">
+                  {invitations.map((inv) => (
+                    <div key={`${inv.email}-${inv.createdAt}`} className="flex items-center justify-between rounded-lg border border-yellow-100 bg-white px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{inv.email}</p>
+                        <p className="text-xs text-slate-500">Role: {inv.role} • Expires: {new Date(inv.expiresAt).toLocaleString()}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => navigator.clipboard.writeText(inv.email)}
+                          className="rounded-md bg-yellow-600 px-3 py-1 text-xs text-white"
+                        >
+                          Copy Email
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

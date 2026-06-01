@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { createTask, updateTask } from "../store/taskSlice";
+import { createTask, updateTask, uploadAttachment } from "../store/taskSlice";
 
 const initialForm = {
   title: "",
@@ -26,9 +26,11 @@ export default function TaskModal({
 }) {
   const dispatch = useDispatch();
   const { currentRole, current } = useSelector((state) => state.projects);
-
   const [form, setForm] = useState(initialForm);
+
   const [saving, setSaving] = useState(false);
+  const [file, setFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const isEdit = Boolean(task?._id);
   const members = current?.members || [];
@@ -77,13 +79,32 @@ export default function TaskModal({
             payload: form,
           })
         ).unwrap();
+
+        if (file) {
+          await dispatch(
+            uploadAttachment({
+              projectId,
+              taskId: task._id,
+              file,
+              onUploadProgress: (p) => setUploadProgress(p),
+            })
+          ).unwrap();
+        }
       } else {
-        await dispatch(
-          createTask({
-            projectId,
-            payload: form,
-          })
+        const created = await dispatch(
+          createTask({ projectId, payload: form })
         ).unwrap();
+
+        if (file) {
+          await dispatch(
+            uploadAttachment({
+              projectId,
+              taskId: created._id,
+              file,
+              onUploadProgress: (p) => setUploadProgress(p),
+            })
+          ).unwrap();
+        }
       }
 
       onClose();
@@ -106,6 +127,20 @@ export default function TaskModal({
             <p className="text-sm text-slate-500">
               Manage title, priority, status, due date and assignees.
             </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Attachment</label>
+            <input
+              type="file"
+              accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="w-full"
+            />
+
+            {uploadProgress > 0 && (
+              <div className="mt-2 text-sm text-slate-600">Uploading: {uploadProgress}%</div>
+            )}
           </div>
 
           <button

@@ -16,8 +16,8 @@ export default function TopNav({ onToggleSidebar }) {
           </button>
           <Link to="/dashboard" className="text-xl font-bold">SyncBoard</Link>
           <nav className="hidden md:flex gap-3 text-sm text-slate-600">
-            <Link to="/projects" className="hover:underline">Projects</Link>
             <Link to="/dashboard" className="hover:underline">Dashboard</Link>
+            <Link to="/projects" className="hover:underline">Projects</Link>
           </nav>
         </div>
 

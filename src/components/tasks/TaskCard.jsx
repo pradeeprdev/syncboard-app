@@ -107,6 +107,19 @@ export default function TaskCard({
               </span>
             )}
           </div>
+
+          {task.attachments?.length > 0 && (
+            <div className="mt-4 border-t pt-3">
+              <p className="text-sm font-semibold text-slate-700">Attachments</p>
+              <div className="mt-2 flex flex-col gap-2">
+                {task.attachments.map((a) => (
+                  <a key={a._id || a.publicId} href={a.fileUrl} target="_blank" rel="noreferrer" className="text-sm text-slate-600 hover:underline">
+                    {a.fileName || a.publicId} • {(a.size / 1024).toFixed(1)} KB
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

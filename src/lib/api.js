@@ -30,8 +30,14 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const originalRequest = err.config;
-
     if (err.response && err.response.status === 401 && !originalRequest._retry) {
+      // Do not attempt refresh for auth endpoints (login/register/refresh/reset)
+      const url = originalRequest.url || originalRequest.baseURL || "";
+      const skipPaths = ["/auth/login", "/auth/register", "/auth/refresh", "/auth/forgot-password", "/auth/reset-password"];
+      if (skipPaths.some((p) => url.includes(p))) {
+        return Promise.reject(err);
+      }
+
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
@@ -47,6 +53,12 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       const refreshToken = localStorage.getItem("refreshToken");
+      if (!refreshToken) {
+        // No refresh token available - don't attempt refresh
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        return Promise.reject(err);
+      }
 
       try {
         const response = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });

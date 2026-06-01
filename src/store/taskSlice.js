@@ -113,6 +113,57 @@ export const bulkDeleteTasks = createAsyncThunk(
   }
 );
 
+export const uploadAttachment = createAsyncThunk(
+  "tasks/uploadAttachment",
+  async ({ projectId, taskId, file, onUploadProgress }, { rejectWithValue }) => {
+    try {
+      if (!file) {
+        return rejectWithValue("File is required");
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await api.post(
+        `/projects/${projectId}/tasks/${taskId}/attachments`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (event) => {
+            if (event.total && onUploadProgress) {
+              const percent = Math.round((event.loaded * 100) / event.total);
+              onUploadProgress(percent);
+            }
+          },
+        }
+      );
+
+      return {
+        taskId,
+        attachment: res.data.data.attachment,
+      };
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to upload attachment"
+      );
+    }
+  }
+);
+
+export const fetchAttachments = createAsyncThunk(
+  "tasks/fetchAttachments",
+  async ({ projectId, taskId }, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/projects/${projectId}/tasks/${taskId}/attachments`);
+      return { taskId, attachments: res.data.data.attachments };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch attachments");
+    }
+  }
+);
+
 const taskSlice = createSlice({
   name: "tasks",
   initialState: {
@@ -262,6 +313,19 @@ const taskSlice = createSlice({
         );
 
         state.selectedIds = [];
+      });
+
+    builder
+      .addCase(uploadAttachment.fulfilled, (state, action) => {
+        const { taskId, attachment } = action.payload;
+        state.list = state.list.map((t) => {
+          if (t._id !== taskId) return t;
+          return { ...t, attachments: [...(t.attachments || []), attachment] };
+        });
+      })
+      .addCase(fetchAttachments.fulfilled, (state, action) => {
+        const { taskId, attachments } = action.payload;
+        state.list = state.list.map((t) => (t._id === taskId ? { ...t, attachments } : t));
       });
   },
 });

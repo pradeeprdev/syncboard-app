@@ -116,6 +116,20 @@ export const fetchActivity = createAsyncThunk(
   }
 );
 
+export const fetchInvitations = createAsyncThunk(
+  "projects/fetchInvitations",
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/projects/${projectId}/invitations`);
+      return res.data.data.invitations;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch invitations"
+      );
+    }
+  }
+);
+
 const projectSlice = createSlice({
   name: "projects",
   initialState: {
@@ -123,6 +137,7 @@ const projectSlice = createSlice({
     current: null,
     currentRole: null,
     activity: [],
+    invitations: [],
     loading: false,
     error: null,
     inviteResult: null,
@@ -184,6 +199,13 @@ const projectSlice = createSlice({
         state.inviteResult = action.payload;
       })
       .addCase(inviteMember.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      .addCase(fetchInvitations.fulfilled, (state, action) => {
+        state.invitations = action.payload;
+      })
+      .addCase(fetchInvitations.rejected, (state, action) => {
         state.error = action.payload;
       })
 

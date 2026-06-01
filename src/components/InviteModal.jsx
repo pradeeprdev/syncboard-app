@@ -1,13 +1,14 @@
 import React from "react";
 import { useForm } from "react-hook-form";
-import { useSelector } from "react-redux";
-import api from "../lib/api";
-import { useToast } from "./ToastContext";
+import { useSelector, useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useProjectRole } from "../hooks/useProjectRole";
+import { inviteMember, fetchInvitations } from "../store/projectSlice";
+import { showToast } from "../store/uiSlice";
 
 export default function InviteModal({ open, onClose, projectId }) {
   const { register, handleSubmit, reset } = useForm();
-  const toast = useToast();
+  const dispatch = useDispatch();
   const { current: project } = useSelector((s) => s.projects);
   const userRole = useProjectRole(project);
   const canInvite = userRole === 'admin';
@@ -15,12 +16,17 @@ export default function InviteModal({ open, onClose, projectId }) {
   const onSubmit = async (data) => {
     if (!canInvite) return;
     try {
-      const res = await api.post(`/projects/${projectId}/invitations`, data);
-      toast.add('Invitation created. Copy token for testing.', { type: 'success' });
+      const res = await dispatch(inviteMember({ projectId, email: data.email, role: data.role })).unwrap();
+
+      dispatch(showToast({ type: "success", message: res.message || "Invitation created" }));
+      // refresh invites list
+      dispatch(fetchInvitations(projectId));
+
       reset();
       onClose();
     } catch (err) {
-      toast.add(err.response?.data?.message || 'Invite failed', { type: 'error' });
+      const msg = err?.message || err || 'Invite failed';
+      dispatch(showToast({ type: "error", message: msg }));
     }
   };
 
