@@ -1,19 +1,25 @@
-import React from "react";
+import { useState } from "react";
 import TopNav from "./TopNav";
 import Sidebar from "./Sidebar";
-import { useState } from "react";
 
 export default function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const openSidebar = () => setMobileOpen(true);
+  const closeSidebar = () => setMobileOpen(false);
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <TopNav onToggleSidebar={() => setMobileOpen((s) => !s)} />
-      <div className="flex max-w-6xl mx-auto p-4 gap-4">
-        <aside className={`w-60 ${mobileOpen ? 'block' : 'hidden'} md:block` }>
-          <Sidebar />
-        </aside>
-        <main className="flex-1">{children}</main>
+    <div className="min-h-screen bg-slate-100">
+      <TopNav onToggleSidebar={openSidebar} />
+
+      <div className="mx-auto grid max-w-7xl gap-5 px-4 py-5 md:grid-cols-[280px_1fr]">
+        <Sidebar open={mobileOpen} onClose={closeSidebar} />
+
+        <main className="min-w-0">
+          <div className="rounded-3xl border border-slate-200 bg-white/60 p-3 shadow-sm backdrop-blur sm:p-4">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

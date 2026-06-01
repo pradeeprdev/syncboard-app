@@ -1,4 +1,12 @@
-import { Calendar, Edit3, Trash2, UserRound } from "lucide-react";
+import {
+  Calendar,
+  Edit3,
+  Trash2,
+  UserRound,
+  Image,
+  FileText,
+  ExternalLink,
+} from "lucide-react";
 
 const statusLabel = {
   todo: "Todo",
@@ -12,6 +20,19 @@ const priorityClass = {
   medium: "bg-blue-100 text-blue-700",
   high: "bg-orange-100 text-orange-700",
   critical: "bg-red-100 text-red-700",
+};
+
+const isImage = (attachment) => {
+  return attachment.mimeType?.startsWith("image/");
+};
+
+const isPdf = (attachment) => {
+  return attachment.mimeType === "application/pdf";
+};
+
+const formatSize = (size) => {
+  if (!size) return "";
+  return `${(size / 1024).toFixed(1)} KB`;
 };
 
 export default function TaskCard({
@@ -36,9 +57,7 @@ export default function TaskCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
-              <h3 className="font-bold text-slate-950">
-                {task.title}
-              </h3>
+              <h3 className="font-bold text-slate-950">{task.title}</h3>
 
               <p className="mt-1 line-clamp-2 text-sm text-slate-500">
                 {task.description || "No description"}
@@ -75,8 +94,7 @@ export default function TaskCard({
 
             <span
               className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${
-                priorityClass[task.priority] ||
-                "bg-slate-100 text-slate-700"
+                priorityClass[task.priority] || "bg-slate-100 text-slate-700"
               }`}
             >
               {task.priority}
@@ -102,20 +120,61 @@ export default function TaskCard({
                 </span>
               ))
             ) : (
-              <span className="text-xs text-slate-400">
-                No assignee
-              </span>
+              <span className="text-xs text-slate-400">No assignee</span>
             )}
           </div>
 
           {task.attachments?.length > 0 && (
-            <div className="mt-4 border-t pt-3">
-              <p className="text-sm font-semibold text-slate-700">Attachments</p>
-              <div className="mt-2 flex flex-col gap-2">
+            <div className="mt-5 border-t pt-4">
+              <p className="text-sm font-semibold text-slate-700">
+                Attachments
+              </p>
+
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {task.attachments.map((a) => (
-                  <a key={a._id || a.publicId} href={a.fileUrl} target="_blank" rel="noreferrer" className="text-sm text-slate-600 hover:underline">
-                    {a.fileName || a.publicId} • {(a.size / 1024).toFixed(1)} KB
-                  </a>
+                  <div
+                    key={a._id || a.publicId}
+                    className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
+                  >
+                    {isImage(a) ? (
+                      <a href={a.fileUrl} target="_blank" rel="noreferrer">
+                        <img
+                          src={a.fileUrl}
+                          alt={a.fileName || "Attachment"}
+                          className="h-36 w-full object-cover"
+                        />
+                      </a>
+                    ) : isPdf(a) ? (
+                      <div className="flex h-36 items-center justify-center bg-white">
+                        <FileText size={42} className="text-red-500" />
+                      </div>
+                    ) : (
+                      <div className="flex h-36 items-center justify-center bg-white">
+                        <Image size={42} className="text-slate-400" />
+                      </div>
+                    )}
+
+                    <div className="p-3">
+                      <p className="line-clamp-1 text-sm font-medium text-slate-800">
+                        {a.fileName || a.publicId}
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-500">
+                        {a.mimeType || "file"}{" "}
+                        {a.size ? `• ${formatSize(a.size)}` : ""}
+                      </p>
+
+                      <a
+                        href={a.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-slate-700 hover:underline"
+                      >
+                        Open file
+                        <ExternalLink size={13} />
+                      </a>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
