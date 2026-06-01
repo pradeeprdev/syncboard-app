@@ -1,16 +1,41 @@
-# React + Vite
+# SyncBoard Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
 
-Currently, two official plugins are available:
+SyncBoard Frontend is a modern React application designed for real-time project collaboration.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+It provides:
 
-## React Compiler
+* Authentication
+* Project Management
+* Task Management
+* Real-time Updates
+## SyncBoard Frontend
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+SyncBoard Frontend is a React + Vite application for real-time project collaboration. It includes auth, project/task management, attachments, and a realtime layer using Socket.io.
 
-## Expanding the ESLint configuration
+Quick start
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+cd syncboard-app
+npm install
+npm run dev
+```
+
+Environment
+
+- Create `.env` from `.env.example` and set `VITE_API_URL`, `VITE_CLIENT_URL`, and optionally `VITE_SOCKET_URL`.
+
+Build
+
+```bash
+npm run build
+npm run preview
+```
+
+Notes
+
+- Attachments upload is proxied through the backend to Cloudinary.
+- Use the backend's dev responses when testing invites/resets (links may be returned).
+
+
